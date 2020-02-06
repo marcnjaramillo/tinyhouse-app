@@ -1,12 +1,16 @@
 import React from 'react';
-import { useMutation, useQuery } from '../../lib/api';
-import {
-  DeleteListingData,
-  DeleteListingVariables,
-  ListingsData
-} from './types';
+import { useQuery, useMutation } from '@apollo/react-hooks';
+import { gql } from 'apollo-boost';
+import { Avatar, Button, List, Spin } from 'antd';
 
-const LISTINGS = `
+import { Listings as ListingsData } from './__generated__/Listings';
+import {
+  DeleteListing as DeleteListingData,
+  DeleteListingVariables
+} from './__generated__/DeleteListing';
+import './styles/Listings.css';
+
+const LISTINGS = gql`
   query Listings {
     listings {
       id
@@ -22,7 +26,7 @@ const LISTINGS = `
   }
 `;
 
-const DELETE_LISTING = `
+const DELETE_LISTING = gql`
   mutation DeleteListing($id: ID!) {
     deleteListing(id: $id) {
       id
@@ -43,25 +47,35 @@ export const Listings = ({ title }: Props) => {
   ] = useMutation<DeleteListingData, DeleteListingVariables>(DELETE_LISTING);
 
   const handleDeleteListing = async (id: string) => {
-    await deleteListing({ id });
+    await deleteListing({ variables: { id } });
     refetch();
   };
 
   const listings = data ? data.listings : null;
 
   const listingsList = listings ? (
-    <ul>
-      {listings.map(listing => {
-        return (
-          <li key={listing.id}>
-            {listing.title}{' '}
-            <button onClick={() => handleDeleteListing(listing.id)}>
+    <List
+      itemLayout='horizontal'
+      dataSource={listings}
+      renderItem={listing => (
+        <List.Item
+          actions={[
+            <Button
+              type='primary'
+              onClick={() => handleDeleteListing(listing.id)}
+            >
               Delete
-            </button>
-          </li>
-        );
-      })}
-    </ul>
+            </Button>
+          ]}
+        >
+          <List.Item.Meta
+            title={listing.title}
+            description={listing.address}
+            avatar={<Avatar src={listing.image} shape='square' size={48} />}
+          />
+        </List.Item>
+      )}
+    />
   ) : null;
 
   if (loading) {
@@ -83,11 +97,12 @@ export const Listings = ({ title }: Props) => {
   ) : null;
 
   return (
-    <div>
-      <h2>{title}</h2>
-      {listingsList}
-      {deleteListingLoadingMessage}
-      {deleteListingErrorMessage}
+    <div className='listings'>
+      <Spin spinning={deleteListingLoading}>
+        <h2>{title}</h2>
+        {listingsList}
+        {deleteListingErrorMessage}
+      </Spin>
     </div>
   );
 };
