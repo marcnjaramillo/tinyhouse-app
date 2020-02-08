@@ -4,6 +4,7 @@
   "scripts": {
     "start": "nodemon src/server.ts",
     "seed": "ts-node temp/seed.ts",
+    "clear": "ts-node temp/clear.ts",
     "build": "tsc -p ./"
   },
   "author": "Marc Jaramillo",
