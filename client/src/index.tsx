@@ -4,7 +4,7 @@ import ApolloClient from 'apollo-boost';
 import { ApolloProvider } from '@apollo/react-hooks';
 import * as serviceWorker from './serviceWorker';
 
-import { Listings } from './sections';
+import App from './App';
 import './styles/index.css';
 
 const client = new ApolloClient({
@@ -13,7 +13,7 @@ const client = new ApolloClient({
 
 render(
   <ApolloProvider client={client}>
-    <Listings title='TinyHouse Listings' />
+    <App />
   </ApolloProvider>,
   document.getElementById('root')
 );
