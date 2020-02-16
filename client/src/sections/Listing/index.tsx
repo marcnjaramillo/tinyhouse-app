@@ -52,6 +52,4 @@ export const Listing = ({ match }: RouteComponentProps<MatchParams>) => {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const listingBookings = listing ? listing.bookings : null;
-
-  return <h2>Listing</h2>;
 };
