@@ -1,10 +1,10 @@
 import crypto from 'crypto';
-import { IResolvers } from 'apollo-server-express';
 import { Request, Response } from 'express';
-
-import { Google } from '../../../lib/api';
+import { IResolvers } from 'apollo-server-express';
+import { Google, Stripe } from '../../../lib/api';
 import { Viewer, Database, User } from '../../../lib/types';
-import { LogInArgs } from './types';
+import { authorize } from '../../../lib/utils';
+import { LogInArgs, ConnectStripeArgs } from './types';
 
 const cookieOptions = {
   httpOnly: true,
@@ -25,6 +25,7 @@ const logInViaGoogle = async (
     throw new Error('Google login error');
   }
 
+  // Name/Photo/Email Lists
   const userNamesList = user.names && user.names.length ? user.names : null;
   const userPhotosList = user.photos && user.photos.length ? user.photos : null;
   const userEmailsList =
@@ -32,7 +33,10 @@ const logInViaGoogle = async (
       ? user.emailAddresses
       : null;
 
+  // User Display Name
   const userName = userNamesList ? userNamesList[0].displayName : null;
+
+  // User Id
   const userId =
     userNamesList &&
     userNamesList[0].metadata &&
@@ -40,9 +44,11 @@ const logInViaGoogle = async (
       ? userNamesList[0].metadata.source.id
       : null;
 
+  // User Avatar
   const userAvatar =
     userPhotosList && userPhotosList[0].url ? userPhotosList[0].url : null;
 
+  // User Email
   const userEmail =
     userEmailsList && userEmailsList[0].value ? userEmailsList[0].value : null;
 
@@ -99,7 +105,7 @@ const logInViaCookie = async (
     { $set: { token } },
     { returnOriginal: false }
   );
-
+  /* eslint-disable prefer-const */
   let viewer = updateRes.value;
 
   if (!viewer) {
@@ -115,7 +121,7 @@ export const viewerResolvers: IResolvers = {
       try {
         return Google.authUrl;
       } catch (error) {
-        throw new Error(`Falied to query Google Auth Url: ${error}`);
+        throw new Error(`Failed to query Google Auth Url: ${error}`);
       }
     }
   },
@@ -158,6 +164,81 @@ export const viewerResolvers: IResolvers = {
         return { didRequest: true };
       } catch (error) {
         throw new Error(`Failed to log out: ${error}`);
+      }
+    },
+    connectStripe: async (
+      _root: undefined,
+      { input }: ConnectStripeArgs,
+      { db, req }: { db: Database; req: Request }
+    ): Promise<Viewer> => {
+      try {
+        const { code } = input;
+
+        let viewer = await authorize(db, req);
+        if (!viewer) {
+          throw new Error('viewer cannot be found');
+        }
+
+        const wallet = await Stripe.connect(code);
+        if (!wallet) {
+          throw new Error('stripe grant error');
+        }
+
+        const updateRes = await db.users.findOneAndUpdate(
+          { _id: viewer._id },
+          { $set: { walletId: wallet.stripe_user_id } },
+          { returnOriginal: false }
+        );
+
+        if (!updateRes.value) {
+          throw new Error('viewer could not be updated');
+        }
+
+        viewer = updateRes.value;
+
+        return {
+          _id: viewer._id,
+          token: viewer.token,
+          avatar: viewer.avatar,
+          walletId: viewer.walletId,
+          didRequest: true
+        };
+      } catch (error) {
+        throw new Error(`Failed to connect with Stripe: ${error}`);
+      }
+    },
+    disconnectStripe: async (
+      _root: undefined,
+      _args: {},
+      { db, req }: { db: Database; req: Request }
+    ): Promise<Viewer> => {
+      try {
+        let viewer = await authorize(db, req);
+        if (!viewer) {
+          throw new Error('viewer cannot be found');
+        }
+
+        const updateRes = await db.users.findOneAndUpdate(
+          { _id: viewer._id },
+          { $unset: { walletId: '' } },
+          { returnOriginal: false }
+        );
+
+        if (!updateRes.value) {
+          throw new Error('viewer could not be updated');
+        }
+
+        viewer = updateRes.value;
+
+        return {
+          _id: viewer._id,
+          token: viewer.token,
+          avatar: viewer.avatar,
+          walletId: viewer.walletId,
+          didRequest: true
+        };
+      } catch (error) {
+        throw new Error(`Failed to disconnect with Stripe: ${error}`);
       }
     }
   },
