@@ -8,7 +8,6 @@ interface Props {
 }
 
 const stripeAuthUrl = `https://connect.stripe.com/oauth/authorize?response_type=code&client_id=${process.env.REACT_APP_STRIPE_CLIENT_ID}&scope=read_write`;
-
 const { Paragraph, Text, Title } = Typography;
 
 export const UserProfile = ({ user, viewerIsUser }: Props) => {
