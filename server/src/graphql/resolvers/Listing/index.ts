@@ -118,7 +118,7 @@ export const listingResolvers: IResolvers = {
     ): Promise<Listing> => {
       verifyHostListingInput(input);
 
-      let viewer = await authorize(db, req);
+      const viewer = await authorize(db, req);
       if (!viewer) {
         throw new Error('viewer cannot be found');
       }
