@@ -149,6 +149,10 @@ export const ListingCreateBookingModal = ({
           >
             Book
           </Button>
+          <Paragraph type='secondary'>
+            Test using the credit card number: 4242 4242 4242 4242, a future
+            expiration date, and any 3 digits for the CVC code.
+          </Paragraph>
         </div>
       </div>
     </Modal>
