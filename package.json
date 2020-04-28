@@ -19,6 +19,6 @@
     "stripe": "^7.13.1"
   },
   "scripts": {
-    "start": "node tinyhouse-deploy/src/index.js"
+    "start": "node tinyhouse-deploy/src/server.js"
   }
 }
