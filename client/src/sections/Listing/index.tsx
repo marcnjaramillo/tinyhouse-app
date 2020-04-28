@@ -7,25 +7,35 @@ import { ErrorBanner, PageSkeleton } from '../../lib/components';
 import { LISTING } from '../../lib/graphql/queries';
 import {
   Listing as ListingData,
-  ListingVariables
+  ListingVariables,
 } from '../../lib/graphql/queries/Listing/__generated__/Listing';
+import { Viewer } from '../../lib/types';
 import {
-  ListingCreateBooking,
   ListingBookings,
-  ListingDetails
+  ListingCreateBooking,
+  ListingCreateBookingModal,
+  ListingDetails,
 } from './components';
 
 interface MatchParams {
   id: string;
 }
 
+interface Props {
+  viewer: Viewer;
+}
+
 const { Content } = Layout;
 const PAGE_LIMIT = 3;
 
-export const Listing = ({ match }: RouteComponentProps<MatchParams>) => {
+export const Listing = ({
+  viewer,
+  match,
+}: Props & RouteComponentProps<MatchParams>) => {
   const [bookingsPage, setBookingsPage] = useState(1);
   const [checkInDate, setCheckInDate] = useState<Moment | null>(null);
   const [checkOutDate, setCheckOutDate] = useState<Moment | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const { loading, data, error } = useQuery<ListingData, ListingVariables>(
     LISTING,
@@ -33,8 +43,8 @@ export const Listing = ({ match }: RouteComponentProps<MatchParams>) => {
       variables: {
         id: match.params.id,
         bookingsPage,
-        limit: PAGE_LIMIT
-      }
+        limit: PAGE_LIMIT,
+      },
     }
   );
 
@@ -73,13 +83,28 @@ export const Listing = ({ match }: RouteComponentProps<MatchParams>) => {
 
   const listingCreateBookingElement = listing ? (
     <ListingCreateBooking
+      viewer={viewer}
+      host={listing.host}
       price={listing.price}
+      bookingsIndex={listing.bookingsIndex}
       checkInDate={checkInDate}
       checkOutDate={checkOutDate}
       setCheckInDate={setCheckInDate}
       setCheckOutDate={setCheckOutDate}
+      setModalVisible={setModalVisible}
     />
   ) : null;
+
+  const listingCreateBookingModalElement =
+    listing && checkInDate && checkOutDate ? (
+      <ListingCreateBookingModal
+        price={listing.price}
+        modalVisible={modalVisible}
+        checkInDate={checkInDate}
+        checkOutDate={checkOutDate}
+        setModalVisible={setModalVisible}
+      />
+    ) : null;
 
   return (
     <Content className='listings'>
@@ -92,6 +117,7 @@ export const Listing = ({ match }: RouteComponentProps<MatchParams>) => {
           {listingCreateBookingElement}
         </Col>
       </Row>
+      {listingCreateBookingModalElement}
     </Content>
   );
 };
